@@ -1,3 +1,3 @@
-FROM ubuntu-latest
+FROM ubuntu
 
 # Put your dockerfile here!
