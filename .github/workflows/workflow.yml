@@ -6,11 +6,9 @@ on:
   workflow_dispatch:
   # PUT YOUR TRIGGER HERE 
 
-job:
+jobs:
   name: # CALL THE JOB SOMETHING
-    runs-on: ubuntu-latest
-    # PUT YOUR DOCKER IMAGE NAME HERE 
-  
+    runs-on: ubuntu-latest  
     steps:
       - uses: actions/checkout@v4
       # PUT AN ACTUAL STEP HERE
