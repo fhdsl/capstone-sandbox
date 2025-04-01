@@ -1,1 +1,16 @@
 # PUT YOUR GITHUB ACTION WORKFLOW HERE
+
+name: # PUT A NAME HERE
+
+on:
+  workflow_dispatch:
+  # PUT YOUR TRIGGER HERE 
+
+job:
+  runs-on: ubuntu-latest
+  # PUT YOUR DOCKER IMAGE NAME HERE 
+  
+    steps:
+      - uses: actions/checkout@v4
+
+      # PUT AN ACTUAL STEP HERE
