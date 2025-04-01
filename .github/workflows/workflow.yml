@@ -7,10 +7,10 @@ on:
   # PUT YOUR TRIGGER HERE 
 
 job:
+  name: # CALL THE JOB SOMETHING
   runs-on: ubuntu-latest
   # PUT YOUR DOCKER IMAGE NAME HERE 
   
     steps:
       - uses: actions/checkout@v4
-
       # PUT AN ACTUAL STEP HERE
