@@ -8,8 +8,8 @@ on:
 
 job:
   name: # CALL THE JOB SOMETHING
-  runs-on: ubuntu-latest
-  # PUT YOUR DOCKER IMAGE NAME HERE 
+    runs-on: ubuntu-latest
+    # PUT YOUR DOCKER IMAGE NAME HERE 
   
     steps:
       - uses: actions/checkout@v4
