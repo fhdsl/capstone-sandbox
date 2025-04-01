@@ -1,6 +1,6 @@
 # PUT YOUR GITHUB ACTION WORKFLOW HERE
 
-name: # PUT A NAME HERE
+name: GitHub Action
 
 on:
   workflow_dispatch:
