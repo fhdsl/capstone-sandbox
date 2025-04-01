@@ -7,8 +7,9 @@ on:
   # PUT YOUR TRIGGER HERE 
 
 jobs:
-  name: # CALL THE JOB SOMETHING
+  job-name: # CALL THE JOB SOMETHING
     runs-on: ubuntu-latest  
+    
     steps:
       - uses: actions/checkout@v4
       # PUT AN ACTUAL STEP HERE
