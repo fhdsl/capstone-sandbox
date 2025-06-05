@@ -1,0 +1,66 @@
+name: GHA Assignment Evaluation
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths: [ 'ASSIGNMENT_2/' ]
+    
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.9.23-slim 
+
+    steps:
+      # Step 1: Checkout the files here. 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Test run the workflow
+
+      # Step 3: If the docker image builds succesfully then grab a code
+      - name: Install uv
+        if: success()
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        if: success()
+        run: | 
+          uv pip install --system requests uuid
+
+      - name: Generate secret code
+        id: generate-code
+        if: success() # Ensure this step only runs if the previous build step succeeded
+        run: |
+          # Execute the Python script. The script should print the secret code to stdout.
+          # We capture this output and set it as a GitHub Actions step output.
+          # The '>> $GITHUB_OUTPUT' part is crucial for making the variable
+          # accessible to subsequent steps.
+          SECRET_CODE=$(python .github/workflows/scripts/generate_secret_code.py)
+          echo "Generated Secret Code: $SECRET_CODE"
+          echo "secret_code=$SECRET_CODE" >> $GITHUB_OUTPUT
+        shell: bash # Use bash to run the command and capture output
+
+      # Step 4: Comment the secret code on the Pull Request
+      # This step also only runs if the Docker build was successful.
+      - name: Comment secret code on PR
+        if: success() # Ensure this step only runs if the build was successful
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🎉 **Github Action Successful!** 🎉
+            
+            Great job! Your Dockerfile built successfully.
+            
+            Please copy the following secret code and provide it to your Coursera course to prove completion:
+            
+            ```
+            ${{ steps.generate-code.outputs.secret_code }}
+            ```
+            
+            Keep up the excellent work!
+          comment-id: docker-build-secret-code
+          update-existing: true
