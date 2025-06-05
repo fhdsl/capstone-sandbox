@@ -45,7 +45,7 @@ jobs:
           # We capture this output and set it as a GitHub Actions step output.
           # The '>> $GITHUB_OUTPUT' part is crucial for making the variable
           # accessible to subsequent steps.
-          SECRET_CODE=$(python .github/worklows/scripts/generate_secret_code.py)
+          SECRET_CODE=$(python .github/workflows/scripts/generate_secret_code.py)
           echo "Generated Secret Code: $SECRET_CODE"
           echo "secret_code=$SECRET_CODE" >> $GITHUB_OUTPUT
         shell: bash # Use bash to run the command and capture output
