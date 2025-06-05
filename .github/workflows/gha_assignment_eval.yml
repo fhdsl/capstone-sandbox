@@ -4,7 +4,9 @@ on:
   pull_request:
     branches:
       - 'main'
-    paths: [ 'ASSIGNMENT_2/' ]
+    paths: 
+      - './ASSIGNMENT_2/ASSIGNMENT_2.yml'
+      - '.github/workflows/ASSIGNMENT_2.yml'
     
 jobs:
   docker-test:
@@ -17,10 +19,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Test run the workflow
-      - name: Test run the workflow
-        uses: ./ASSIGNMENT_2/ASSIGNMENT_2.yml
+      # Step 2: Determine which path the action file is in
+      - name: Determine action path
+        id: path_check
+        run: |
+          if [ -f "./ASSIGNMENT_2/ASSIGNMENT_2.yml" ]; then
+            echo "action_path=./ASSIGNMENT_2/ASSIGNMENT_2.yml" >> $GITHUB_OUTPUT
+          elif [ -f "./.github/workflows/ASSIGNMENT_2.yml" ]; then
+            echo "action_path=./.github/workflows/ASSIGNMENT_2.yml" >> $GITHUB_OUTPUT
+          else
+            echo "Error: ASSIGNMENT_2.yml not found in expected locations."
+            exit 1
+          fi
 
+      # Step 3: Test run the workflow using the determined path
+      - name: Test run the workflow
+        uses: ${{ steps.path_check.outputs.action_path }}
+        id: tested_action
+        
       # Step 3: If the docker image builds succesfully then grab a code
       - name: Install uv
         if: success()
