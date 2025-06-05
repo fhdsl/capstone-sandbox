@@ -11,15 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository code
-      # This action checks out your repository under $GITHUB_WORKSPACE,
-      # so your workflow can access your code, including the new script.
+      # Step 1: Checkout the files here. 
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Build the Docker image
-      # This action attempts to build the Docker image from the specified
-      # Dockerfile. If this step fails, the subsequent steps will not run.
+      # Step 2: Test build the docker image
       - name: Build Docker image
         id: build-docker-image
         uses: docker/build-push-action@v5
@@ -28,11 +24,7 @@ jobs:
           context: docker
           file: docker/Dockerfile
 
-      # Step 3: Generate a unique secret code using the external script
-      # This step only runs if the 'Build Docker image' step was successful.
-      # It executes the Python script located at 'scripts/generate_secret_code.py'.
-      # The script is expected to print the secret code to standard output,
-      # which is then captured and set as a step output.
+      # Step 3: If the docker image builds succesfully then grab a code
       - name: Generate secret code
         id: generate-code
         if: success() # Ensure this step only runs if the previous build step succeeded
