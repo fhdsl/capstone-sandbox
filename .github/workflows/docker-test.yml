@@ -18,6 +18,9 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Test build the docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 # Use the latest stable version
+
       - name: Build Docker image
         id: build-docker-image
         uses: docker/build-push-action@v5
