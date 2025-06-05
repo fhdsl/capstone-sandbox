@@ -14,5 +14,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run a thing 
-        run: echo "hello world"
       # PUT AN ACTUAL STEP HERE
