@@ -1,4 +1,4 @@
-name: Docker Test
+name: Docker Assignment Evaluation
 
 on:
   pull_request:
@@ -26,8 +26,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          context: docker
-          file: docker/Dockerfile
+          context: ASSIGNMENT_1/docker
+          file: ASSIGNMENT_1/docker/Dockerfile
 
       # Step 3: If the docker image builds succesfully then grab a code
       - name: Install uv
