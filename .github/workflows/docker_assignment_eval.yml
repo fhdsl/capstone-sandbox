@@ -72,3 +72,20 @@ jobs:
             Keep up the excellent work!
           comment-id: docker-build-secret-code
           update-existing: true
+
+      # --- Comment on Pull Request (FAILURE case) ---
+      - name: Comment on PR (Failure)
+        # Fixed: Reference the correct step and output
+        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-location.outputs.correct_location == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Learner Action Test Failed!** ⚠️
+            It looks like your GitHub Action test did not complete successfully.
+            Please **review the Action logs for this workflow run** to identify and fix the issue. You can access the logs by clicking on the "Details" next to your failed test.
+            Once you've resolved the problem, push your changes to this pull request, and the workflow will automatically re-run.
+            Keep trying! You'll get it!
+          comment-id: learner-action-secret-code-failure
+          update-existing: true
