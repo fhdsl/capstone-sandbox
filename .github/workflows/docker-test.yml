@@ -9,6 +9,8 @@ on:
 jobs:
   docker-test:
     runs-on: ubuntu-latest
+    container:
+      image: python:3.9.23-slim 
 
     steps:
       # Step 1: Checkout the files here. 
@@ -25,6 +27,12 @@ jobs:
           file: docker/Dockerfile
 
       # Step 3: If the docker image builds succesfully then grab a code
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies 
+        run: uv pip install uuid requests
+
       - name: Generate secret code
         id: generate-code
         if: success() # Ensure this step only runs if the previous build step succeeded
