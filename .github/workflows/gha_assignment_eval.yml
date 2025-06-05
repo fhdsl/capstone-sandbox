@@ -12,7 +12,7 @@ jobs:
    gha-test:
     runs-on: ubuntu-latest
     container:
-      image: python:3.9.23-slim
+      image: maniator/gh
 
     steps:
       # Step 1: Checkout the files here.
