@@ -1,28 +1,70 @@
-# Candace Savonen Oct 2025
-
 name: Docker Test
 
 on:
-  push:
+  pull_request:
     branches:
       - 'main'
-    paths: [ docker/Dockerfile ]
+    paths: [ 'docker/Dockerfile' ]
     
 jobs:
   docker-test:
     runs-on: ubuntu-latest
 
     steps:
-      # Need to checkout the files from this
-      - uses: actions/checkout@v4
+      # Step 1: Checkout the repository code
+      # This action checks out your repository under $GITHUB_WORKSPACE,
+      # so your workflow can access your code, including the new script.
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Attempt to build the docker image
+      # Step 2: Build the Docker image
+      # This action attempts to build the Docker image from the specified
+      # Dockerfile. If this step fails, the subsequent steps will not run.
       - name: Build Docker image
-        uses: docker/build-push-action@v3
+        id: build-docker-image
+        uses: docker/build-push-action@v5
         with:
           push: false
-          # What directory should this be building from?
           context: docker
-          # Where's the Dockerfile to build this image from?
           file: docker/Dockerfile
 
+      # Step 3: Generate a unique secret code using the external script
+      # This step only runs if the 'Build Docker image' step was successful.
+      # It executes the Python script located at 'scripts/generate_secret_code.py'.
+      # The script is expected to print the secret code to standard output,
+      # which is then captured and set as a step output.
+      - name: Generate secret code
+        id: generate-code
+        if: success() # Ensure this step only runs if the previous build step succeeded
+        run: |
+          # Execute the Python script. The script should print the secret code to stdout.
+          # We capture this output and set it as a GitHub Actions step output.
+          # The '>> $GITHUB_OUTPUT' part is crucial for making the variable
+          # accessible to subsequent steps.
+          SECRET_CODE=$(python scripts/generate_secret_code.py)
+          echo "Generated Secret Code: $SECRET_CODE"
+          echo "secret_code=$SECRET_CODE" >> $GITHUB_OUTPUT
+        shell: bash # Use bash to run the command and capture output
+
+      # Step 4: Comment the secret code on the Pull Request
+      # This step also only runs if the Docker build was successful.
+      - name: Comment secret code on PR
+        if: success() # Ensure this step only runs if the build was successful
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🎉 **Dockerfile Build Successful!** 🎉
+            
+            Great job! Your Dockerfile built successfully.
+            
+            Please copy the following secret code and provide it to your Coursera course to prove completion:
+            
+            ```
+            ${{ steps.generate-code.outputs.secret_code }}
+            ```
+            
+            Keep up the excellent work!
+          comment-id: docker-build-secret-code
+          update-existing: true
