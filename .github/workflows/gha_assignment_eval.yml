@@ -4,36 +4,110 @@ on:
   pull_request:
     branches:
       - 'main'
-    paths: [ 'ASSIGNMENT_2/' ]
+    paths:
+    - 'ASSIGNMENT_2/ASSIGNMENT_2.yml'
+    - '.github/workflow/ASSIGNMENT_2.yml'
     
 jobs:
-  docker-test:
+   gha-test:
     runs-on: ubuntu-latest
     container:
       image: python:3.9.23-slim 
 
     steps:
-      # Step 1: Checkout the files here. 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Check workflow file location
+        id: check-location
+        run: |
+          WORKFLOW_IN_CORRECT_LOCATION=false
+          WORKFLOW_IN_WRONG_LOCATION=false
+          
+          # Check if workflow file exists in correct location
+          if find .github/workflows/ -name "*ASSIGNMENT_2*" -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | grep -q .; then
+            echo "✅ Workflow file found in .github/workflows/"
+            WORKFLOW_IN_CORRECT_LOCATION=true
+          fi
+          
+          # Check if workflow file exists in assignment folder (wrong location)
+          if find ASSIGNMENT_2/ -name "*.yml" -o -name "*.yaml" 2>/dev/null | grep -q .; then
+            echo "⚠️  Workflow file found in ASSIGNMENT_2/ folder"
+            WORKFLOW_IN_WRONG_LOCATION=true
+          fi
+          
+          echo "correct_location=$WORKFLOW_IN_CORRECT_LOCATION" >> $GITHUB_OUTPUT
+          echo "wrong_location=$WORKFLOW_IN_WRONG_LOCATION" >> $GITHUB_OUTPUT
+          
+      - name: Comment on incorrect file location
+        if: steps.check-location.outputs.wrong_location == 'true' && steps.check-location.outputs.correct_location == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **GitHub Action File Location Issue** ⚠️
+            
+            It looks like you've created your GitHub Action workflow file, but it's in the wrong location!
+            
+            **Current location:** `ASSIGNMENT_2/ASSIGNMENT_2.yml` ❌
+            **Required location:** `.github/workflows/ASSIGNMENT_2.yml` ✅
+            
+            **To fix this:**
+            1. Create a `.github/workflows/` folder in your repository root (if it doesn't exist)
+            2. Move your `ASSIGNMENT_2.yml` file from the `ASSIGNMENT_2/` folder to `.github/workflows/`
+            3. Your final file should be at: `.github/workflows/ASSIGNMENT_2.yml`
+            
+            GitHub Actions only run when workflow files are placed in the `.github/workflows/` directory. Once you move the file to the correct location, your action should start running automatically!
+            
+            💡 **Tip:** You can also rename the file to something more descriptive like `assignment-2-workflow.yml` if you prefer.
+          comment-id: workflow-location-warning
+          
+      - name: Stop evaluation if file in wrong location
+        if: steps.check-location.outputs.correct_location == 'false'
+        run: |
+          echo "::error::Workflow file not found in .github/workflows/ directory"
+          echo "Cannot proceed with evaluation until workflow file is in correct location"
+          exit 1
 
       # Step 2: Test run the workflow
-      - name: Test run the workflow
-        uses: ./ASSIGNMENT_2/ASSIGNMENT_2.yml
+      - name: Trigger student workflow
+        id: trigger-workflow
+        run: |
+          # Create a simple trigger file or event
+          echo "Triggering student workflow..."
+          # You can trigger their workflow using GitHub CLI or API
+          gh workflow run .github/workflow/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Wait and fetch workflow results
+        id: check-results
+        run: |
+          sleep 30  # Wait for workflow to complete
+          
+          # Get the latest workflow run
+          WORKFLOW_ID=$(gh run list --workflow=student-workflow.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+          STATUS=$(gh run view $WORKFLOW_ID --json conclusion --jq '.conclusion')
+          
+          echo "workflow_status=$STATUS" >> $GITHUB_OUTPUT
+          
+          # Download and analyze logs
+          gh run download $WORKFLOW_ID --name logs || true
+          
+      - name: Generate success code
+        if: steps.check-results.outputs.workflow_status == 'success'
 
       # Step 3: If the docker image builds succesfully then grab a code
       - name: Install uv
-        if: success()
+        if: steps.check-results.outputs.workflow_status == 'success'
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        if: success()
+        if: steps.check-results.outputs.workflow_status == 'success'
         run: | 
           uv pip install --system requests uuid
 
       - name: Generate secret code
         id: generate-code
-        if: success() # Ensure this step only runs if the previous build step succeeded
+        if: steps.check-results.outputs.workflow_status == 'success'
         run: |
           # Execute the Python script. The script should print the secret code to stdout.
           # We capture this output and set it as a GitHub Actions step output.
@@ -47,7 +121,7 @@ jobs:
       # Step 4: Comment the secret code on the Pull Request
       # This step also only runs if the Docker build was successful.
       - name: Comment secret code on PR
-        if: success() # Ensure this step only runs if the build was successful
+        if: steps.check-results.outputs.workflow_status == 'success'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
