@@ -78,6 +78,7 @@ jobs:
           # Create a simple trigger file or event
           echo "Triggering student workflow..."
           # Fixed: workflows (plural) and correct filename reference
+          git config --global --add safe.directory $GITHUB_WORKSPACE
           gh workflow run .github/workflows/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +87,7 @@ jobs:
         id: check-results
         if: steps.check-location.outputs.correct_location == 'true'
         run: |
-          sleep 30  # Wait for workflow to complete
+          sleep 90  # Wait for workflow to complete
           
           # Fixed: Use correct workflow filename
           WORKFLOW_ID=$(gh run list --workflow=ASSIGNMENT_2.yml --limit=1 --json databaseId --jq '.[0].databaseId')
