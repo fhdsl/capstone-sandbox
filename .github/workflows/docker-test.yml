@@ -34,7 +34,8 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies 
-        run: uv pip install uuid requests
+        run: | 
+          uv pip install --system requests uuid
 
       - name: Generate secret code
         id: generate-code
