@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
     paths:
-      - './ASSIGNMENT_2/ASSIGNMENT_2.yml'
+      - 'ASSIGNMENT_2/ASSIGNMENT_2.yml'
       - '.github/workflows/ASSIGNMENT_2.yml'
 
 jobs:
