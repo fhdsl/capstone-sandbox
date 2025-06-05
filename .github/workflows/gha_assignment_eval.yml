@@ -74,28 +74,29 @@ jobs:
       # Step 2: Test run the workflow
       - name: Trigger student workflow
         id: trigger-workflow
+        if: steps.check-location.outputs.correct_location == 'true'
         run: |
           # Create a simple trigger file or event
           echo "Triggering student workflow..."
-          # You can trigger their workflow using GitHub CLI or API
-          gh workflow run .github/workflow/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
+          # Fixed: workflows (plural) and correct filename reference
+          gh workflow run .github/workflows/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Wait and fetch workflow results
         id: check-results
+        if: steps.check-location.outputs.correct_location == 'true'
         run: |
           sleep 30  # Wait for workflow to complete
           
-          # Get the latest workflow run
-          WORKFLOW_ID=$(gh run list --workflow=student-workflow.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+          # Fixed: Use correct workflow filename
+          WORKFLOW_ID=$(gh run list --workflow=ASSIGNMENT_2.yml --limit=1 --json databaseId --jq '.[0].databaseId')
           STATUS=$(gh run view $WORKFLOW_ID --json conclusion --jq '.conclusion')
           
           echo "workflow_status=$STATUS" >> $GITHUB_OUTPUT
           
           # Download and analyze logs
           gh run download $WORKFLOW_ID --name logs || true
-          
 
       - name: Install uv
         if: steps.check-results.outputs.workflow_status == 'success'
@@ -139,8 +140,8 @@ jobs:
 
       # --- Comment on Pull Request (FAILURE case) ---
       - name: Comment on PR (Failure)
-        # This step runs ONLY if the learner's action *failed* (or was cancelled/skipped)
-        if: steps.tested_learner_action.outcome != 'success'
+        # Fixed: Reference the correct step and output
+        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-location.outputs.correct_location == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -155,5 +156,5 @@ jobs:
             Once you've resolved the problem, push your changes to this pull request, and the workflow will automatically re-run.
 
             Keep trying! You'll get it!
-          comment-id: learner-action-secret-code-failure # Unique ID for failure comment
+          comment-id: learner-action-secret-code-failure
           update-existing: true
