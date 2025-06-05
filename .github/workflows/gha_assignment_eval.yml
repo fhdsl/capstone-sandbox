@@ -18,6 +18,8 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Test run the workflow
+      - name: Test run the workflow
+        uses: ./ASSIGNMENT_2/ASSIGNMENT_2.yml
 
       # Step 3: If the docker image builds succesfully then grab a code
       - name: Install uv
