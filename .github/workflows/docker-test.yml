@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - 'main'
-    paths: [ 'docker/Dockerfile' ]
+    paths: [ 'ASSIGNMENT_1/Dockerfile' ]
     
 jobs:
   docker-test:
