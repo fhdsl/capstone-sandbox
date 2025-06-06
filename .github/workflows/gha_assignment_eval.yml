@@ -20,6 +20,8 @@ jobs:
         
       - name: Run the thing 
         run: gh workflow run .github/workflows/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
+        env:
+          GH_TOKEN: ${{ github.token }}
           
       - name: Wait and fetch workflow results
         id: check-results
