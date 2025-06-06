@@ -123,23 +123,83 @@ jobs:
           comment-id: docker-build-secret-code
           update-existing: true
 
-      # --- Comment on Pull Request (FAILURE case) ---
-      - name: Comment on PR (Failure)
-        # Fixed: Reference the correct step and output
-        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-location.outputs.correct_location == 'true'
+      # --- Comment on Pull Request (INVALID WORKFLOW case) ---
+      - name: Comment on invalid workflow
+        if: steps.validate-workflow.outputs.workflow_exists == 'true' && steps.validate-workflow.outputs.workflow_valid == 'false'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ⚠️ **Learner Action Test Failed!** ⚠️
+            ⚠️ **Invalid Workflow YAML** ⚠️
 
-            It looks like your GitHub Action test did not complete successfully.
+            Your workflow file exists at `.github/workflows/ASSIGNMENT_2.yml`, but it contains invalid YAML syntax.
 
-            Please **review the Action logs for this workflow run** to identify and fix the issue. You can access the logs by clicking on the "Details" next to your failed test.
+            Please check your workflow file for:
+            - Proper indentation (use spaces, not tabs)
+            - Missing colons or quotes
+            - Incorrect YAML structure
 
-            Once you've resolved the problem, push your changes to this pull request, and the workflow will automatically re-run.
+            You can validate your YAML online at https://yamlchecker.com/ or use a YAML validator in your IDE.
 
-            Keep trying! You'll get it!
+            Once you fix the YAML syntax, push your changes and the evaluation will run automatically!
+          comment-id: invalid-workflow-yaml
+          update-existing: true
+
+      # --- Comment on Pull Request (NO RUNS case) ---
+      - name: Comment on no workflow runs
+        if: steps.check-results.outputs.workflow_status == 'no_recent_runs' || steps.check-results.outputs.workflow_status == 'not_indexed'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **No Recent Workflow Runs Found** ⚠️
+
+            Your workflow file exists at `.github/workflows/ASSIGNMENT_2.yml`, but I haven't found any successful runs in the last 7 days.
+
+            **This could mean:**
+            1. Your workflow hasn't been triggered yet
+            2. Your workflow doesn't have the right triggers to run automatically
+            3. Your workflow has errors that prevent it from running
+
+            **To get your workflow running:**
+            1. Make sure your workflow has triggers like:
+               ```yaml
+               on:
+                 push:
+                   branches: [ main ]
+                 pull_request:
+                   branches: [ main ]
+               ```
+            2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
+            3. Check the "Actions" tab in your repository to see if there are any workflow runs
+
+            Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀
+          comment-id: no-workflow-runs
+          update-existing: true
+
+      # --- Comment on Pull Request (FAILURE case) ---
+      - name: Comment on PR (Failure)
+        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-results.outputs.workflow_status != 'no_runs' && steps.check-results.outputs.workflow_status != 'not_found' && steps.validate-workflow.outputs.workflow_valid == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Workflow Run Failed** ⚠️
+
+            Your workflow file exists and is valid, but the most recent run failed with status: `${{ steps.check-results.outputs.workflow_status }}`
+
+            **Next steps:**
+            1. Check the Actions tab in your repository to see the detailed logs
+            2. Look for error messages in the failed workflow run
+            3. Fix any issues in your workflow or the code it's trying to run
+            4. Push your changes to trigger another run
+
+            Once your workflow runs successfully, the evaluation will automatically update!
+
+            Keep trying! You'll get it! 💪
           comment-id: learner-action-secret-code-failure
           update-existing: true
+          
