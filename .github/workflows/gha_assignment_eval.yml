@@ -19,7 +19,9 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Run the thing 
-        run: gh workflow run .github/workflows/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
+        run: |
+           git config --global --add safe.directory $GITHUB_WORKSPACE
+           gh workflow run .github/workflows/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
         env:
           GH_TOKEN: ${{ github.token }}
           
