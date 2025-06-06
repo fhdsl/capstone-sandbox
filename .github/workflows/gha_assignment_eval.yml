@@ -24,7 +24,6 @@ jobs:
         
       - name: Check for recent successful runs
         id: check-results
-        if: steps.validate-workflow.outputs.workflow_exists == 'true' && steps.validate-workflow.outputs.workflow_valid == 'true'
         run: |
           WORKFLOW_STATUS="none"
           RECENT_SUCCESS=false
