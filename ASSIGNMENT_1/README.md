@@ -1,4 +1,4 @@
-# ASSIGNMENT 1 Instructions 
+# ASSIGNMENT 1 Instructions: Building a Dockerfile 
 
 Your goal for this assignment is to build a working docker image. 
 
