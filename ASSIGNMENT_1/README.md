@@ -2,7 +2,7 @@
 
 Your goal for this assignment is to build a working docker image. 
 
-1. Go to the docker/Dockerfile. 
+1. For this file you will work from the `docker/Dockerfile`. Do not change the name or location of this file. 
 2. Create a new branch to work from for this assignment.
 3. Add to this file so that it installs your desired packages.
 4. You can develop this from your own computer or from here. 
