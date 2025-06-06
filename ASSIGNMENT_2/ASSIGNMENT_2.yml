@@ -3,7 +3,6 @@
 name: GitHub Action
 
 on:
-  workflow_dispatch:
   # PUT YOUR TRIGGER HERE 
 
 jobs:
@@ -11,8 +10,3 @@ jobs:
     runs-on: ubuntu-latest  
     
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run a thing
-        uses: echo "hello"
-      # PUT AN ACTUAL STEP HERE
