@@ -5,97 +5,84 @@ on:
     branches:
       - 'main'
     paths:
-    - 'ASSIGNMENT_2/ASSIGNMENT_2.yml'
-    - '.github/workflow/ASSIGNMENT_2.yml'
-    
+      - '.github/workflows/ASSIGNMENT_2.yml'
+
 jobs:
    gha-test:
     runs-on: ubuntu-latest
     container:
-      image: python:3.9.23-slim 
+      image: maniator/gh
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
 
     steps:
-      - name: Check workflow file location
-        id: check-location
-        run: |
-          WORKFLOW_IN_CORRECT_LOCATION=false
-          WORKFLOW_IN_WRONG_LOCATION=false
-          
-          # Check if workflow file exists in correct location
-          if find .github/workflows/ -name "*ASSIGNMENT_2*" -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | grep -q .; then
-            echo "✅ Workflow file found in .github/workflows/"
-            WORKFLOW_IN_CORRECT_LOCATION=true
-          fi
-          
-          # Check if workflow file exists in assignment folder (wrong location)
-          if find ASSIGNMENT_2/ -name "*.yml" -o -name "*.yaml" 2>/dev/null | grep -q .; then
-            echo "⚠️  Workflow file found in ASSIGNMENT_2/ folder"
-            WORKFLOW_IN_WRONG_LOCATION=true
-          fi
-          
-          echo "correct_location=$WORKFLOW_IN_CORRECT_LOCATION" >> $GITHUB_OUTPUT
-          echo "wrong_location=$WORKFLOW_IN_WRONG_LOCATION" >> $GITHUB_OUTPUT
-          
-      - name: Comment on incorrect file location
-        if: steps.check-location.outputs.wrong_location == 'true' && steps.check-location.outputs.correct_location == 'false'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ **GitHub Action File Location Issue** ⚠️
-            
-            It looks like you've created your GitHub Action workflow file, but it's in the wrong location!
-            
-            **Current location:** `ASSIGNMENT_2/ASSIGNMENT_2.yml` ❌
-            **Required location:** `.github/workflows/ASSIGNMENT_2.yml` ✅
-            
-            **To fix this:**
-            1. Create a `.github/workflows/` folder in your repository root (if it doesn't exist)
-            2. Move your `ASSIGNMENT_2.yml` file from the `ASSIGNMENT_2/` folder to `.github/workflows/`
-            3. Your final file should be at: `.github/workflows/ASSIGNMENT_2.yml`
-            
-            GitHub Actions only run when workflow files are placed in the `.github/workflows/` directory. Once you move the file to the correct location, your action should start running automatically!
-            
-            💡 **Tip:** You can also rename the file to something more descriptive like `assignment-2-workflow.yml` if you prefer.
-          comment-id: workflow-location-warning
-          
-      - name: Stop evaluation if file in wrong location
-        if: steps.check-location.outputs.correct_location == 'false'
-        run: |
-          echo "::error::Workflow file not found in .github/workflows/ directory"
-          echo "Cannot proceed with evaluation until workflow file is in correct location"
-          exit 1
-
-      # Step 2: Test run the workflow
-      - name: Trigger student workflow
-        id: trigger-workflow
-        run: |
-          # Create a simple trigger file or event
-          echo "Triggering student workflow..."
-          # You can trigger their workflow using GitHub CLI or API
-          gh workflow run .github/workflow/ASSIGNMENT_2.yml --ref ${{ github.head_ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Wait and fetch workflow results
+      # Step 1: Checkout the files here.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Check for recent successful runs
         id: check-results
         run: |
-          sleep 30  # Wait for workflow to complete
+          WORKFLOW_STATUS="none"
+          RECENT_SUCCESS=false
           
-          # Get the latest workflow run
-          WORKFLOW_ID=$(gh run list --workflow=student-workflow.yml --limit=1 --json databaseId --jq '.[0].databaseId')
-          STATUS=$(gh run view $WORKFLOW_ID --json conclusion --jq '.conclusion')
+          # Look for workflow files that might match
+          WORKFLOW_FILE=".github/workflows/ASSIGNMENT_2.yml"
           
-          echo "workflow_status=$STATUS" >> $GITHUB_OUTPUT
+          echo "Checking for workflow at: $WORKFLOW_FILE"
           
-          # Download and analyze logs
-          gh run download $WORKFLOW_ID --name logs || true
+          # Try to find the workflow using GitHub API
+          WORKFLOW_INFO=$(gh api repos/${{ github.repository }}/actions/workflows 2>/dev/null | jq -r --arg path "$WORKFLOW_FILE" '.workflows[] | select(.path == $path) | .id' | head -1)
           
-      - name: Generate success code
-        if: steps.check-results.outputs.workflow_status == 'success'
-
-      # Step 3: If the docker image builds succesfully then grab a code
+          if [ ! -z "$WORKFLOW_INFO" ] && [ "$WORKFLOW_INFO" != "null" ] && [ "$WORKFLOW_INFO" != "" ]; then
+            echo "Found workflow with ID: $WORKFLOW_INFO"
+            
+            # Check for recent runs (last 7 days to be more forgiving)
+            echo "Checking for recent workflow runs..."
+            RECENT_RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_INFO/runs?per_page=10" 2>/dev/null | jq -r '.workflow_runs[] | select(.created_at > "'$(date -d '7 days ago' -Iso8601)'") | {id: .id, status: .status, conclusion: .conclusion, created_at: .created_at, head_branch: .head_branch}')
+            
+            if [ ! -z "$RECENT_RUNS" ] && [ "$RECENT_RUNS" != "" ]; then
+              echo "Found recent workflow runs:"
+              echo "$RECENT_RUNS" | jq -c '.'
+              
+              # Check if any recent run was successful
+              SUCCESS_COUNT=$(echo "$RECENT_RUNS" | jq -r 'select(.conclusion == "success") | .id' | wc -l)
+              
+              if [ "$SUCCESS_COUNT" -gt 0 ]; then
+                WORKFLOW_STATUS="success"
+                RECENT_SUCCESS=true
+                echo "✅ Found $SUCCESS_COUNT successful workflow run(s)"
+                
+                # Get the most recent successful run details
+                LATEST_SUCCESS=$(echo "$RECENT_RUNS" | jq -r 'select(.conclusion == "success") | .created_at' | head -1)
+                echo "Most recent success: $LATEST_SUCCESS"
+              else
+                # Check the status of the most recent run
+                LATEST_STATUS=$(echo "$RECENT_RUNS" | jq -r '.conclusion // .status' | head -1)
+                WORKFLOW_STATUS="$LATEST_STATUS"
+                echo "Most recent run status: $WORKFLOW_STATUS"
+              fi
+            else
+              echo "No recent workflow runs found (checked last 7 days)"
+              WORKFLOW_STATUS="no_recent_runs"
+            fi
+          else
+            echo "Could not find workflow in repository or workflow not yet registered"
+            echo "This might happen if:"
+            echo "1. The workflow file was just added and GitHub hasn't indexed it yet"
+            echo "2. The workflow has never been triggered"
+            echo "3. There's an issue with the workflow file"
+            WORKFLOW_STATUS="not_indexed"
+          fi
+          
+          echo "Final workflow_status: $WORKFLOW_STATUS"
+          echo "workflow_status=$WORKFLOW_STATUS" >> $GITHUB_OUTPUT
+          echo "recent_success=$RECENT_SUCCESS" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
       - name: Install uv
         if: steps.check-results.outputs.workflow_status == 'success'
         uses: astral-sh/setup-uv@v5
@@ -109,17 +96,12 @@ jobs:
         id: generate-code
         if: steps.check-results.outputs.workflow_status == 'success'
         run: |
-          # Execute the Python script. The script should print the secret code to stdout.
-          # We capture this output and set it as a GitHub Actions step output.
-          # The '>> $GITHUB_OUTPUT' part is crucial for making the variable
-          # accessible to subsequent steps.
           SECRET_CODE=$(python .github/workflows/scripts/generate_secret_code.py)
           echo "Generated Secret Code: $SECRET_CODE"
           echo "secret_code=$SECRET_CODE" >> $GITHUB_OUTPUT
-        shell: bash # Use bash to run the command and capture output
+        shell: bash
 
-      # Step 4: Comment the secret code on the Pull Request
-      # This step also only runs if the Docker build was successful.
+      # --- Comment on Pull Request (SUCCESS case) ---
       - name: Comment secret code on PR
         if: steps.check-results.outputs.workflow_status == 'success'
         uses: peter-evans/create-or-update-comment@v4
@@ -127,16 +109,97 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            🎉 **Github Action Successful!** 🎉
-            
-            Great job! Your Dockerfile built successfully.
-            
+            🎉 **GitHub Action Successful!** 🎉
+
+            Great job! Your GitHub Action ran successfully.
+
             Please copy the following secret code and provide it to your Coursera course to prove completion:
-            
+
             ```
             ${{ steps.generate-code.outputs.secret_code }}
             ```
-            
+
             Keep up the excellent work!
           comment-id: docker-build-secret-code
           update-existing: true
+
+      # --- Comment on Pull Request (INVALID WORKFLOW case) ---
+      - name: Comment on invalid workflow
+        if: steps.validate-workflow.outputs.workflow_exists == 'true' && steps.validate-workflow.outputs.workflow_valid == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Invalid Workflow YAML** ⚠️
+
+            Your workflow file exists at `.github/workflows/ASSIGNMENT_2.yml`, but it contains invalid YAML syntax.
+
+            Please check your workflow file for:
+            - Proper indentation (use spaces, not tabs)
+            - Missing colons or quotes
+            - Incorrect YAML structure
+
+            You can validate your YAML online at https://yamlchecker.com/ or use a YAML validator in your IDE.
+
+            Once you fix the YAML syntax, push your changes and the evaluation will run automatically!
+          comment-id: invalid-workflow-yaml
+          update-existing: true
+
+      # --- Comment on Pull Request (NO RUNS case) ---
+      - name: Comment on no workflow runs
+        if: steps.check-results.outputs.workflow_status == 'no_recent_runs' || steps.check-results.outputs.workflow_status == 'not_indexed'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **No Recent Workflow Runs Found** ⚠️
+
+            Your workflow file exists at `.github/workflows/ASSIGNMENT_2.yml`, but I haven't found any successful runs in the last 7 days.
+
+            **This could mean:**
+            1. Your workflow hasn't been triggered yet
+            2. Your workflow doesn't have the right triggers to run automatically
+            3. Your workflow has errors that prevent it from running
+
+            **To get your workflow running:**
+            1. Make sure your workflow has triggers like:
+               ```yaml
+               on:
+                 push:
+                   branches: [ main ]
+                 pull_request:
+                   branches: [ main ]
+               ```
+            2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
+            3. Check the "Actions" tab in your repository to see if there are any workflow runs
+
+            Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀
+          comment-id: no-workflow-runs
+          update-existing: true
+
+      # --- Comment on Pull Request (FAILURE case) ---
+      - name: Comment on PR (Failure)
+        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-results.outputs.workflow_status != 'no_runs' && steps.check-results.outputs.workflow_status != 'not_found' && steps.validate-workflow.outputs.workflow_valid == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Workflow Run Failed** ⚠️
+
+            Your workflow file exists and is valid, but the most recent run failed with status: `${{ steps.check-results.outputs.workflow_status }}`
+
+            **Next steps:**
+            1. Check the Actions tab in your repository to see the detailed logs
+            2. Look for error messages in the failed workflow run
+            3. Fix any issues in your workflow or the code it's trying to run
+            4. Push your changes to trigger another run
+
+            Once your workflow runs successfully, the evaluation will automatically update!
+
+            Keep trying! You'll get it! 💪
+          comment-id: learner-action-secret-code-failure
+          update-existing: true
+          
