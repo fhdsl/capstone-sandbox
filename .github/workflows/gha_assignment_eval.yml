@@ -35,7 +35,9 @@ jobs:
           
           # Download and analyze logs
           gh run download $WORKFLOW_ID --name logs || true
-
+        env:
+          GH_TOKEN: ${{ github.token }}
+    
       - name: Install uv
         if: steps.check-results.outputs.workflow_status == 'success'
         uses: astral-sh/setup-uv@v5
