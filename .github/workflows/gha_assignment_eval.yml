@@ -27,7 +27,6 @@ jobs:
           
       - name: Wait and fetch workflow results
         id: check-results
-        if: steps.check-location.outputs.correct_location == 'true'
         run: |
           sleep 90  # Wait for workflow to complete
           
