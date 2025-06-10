@@ -22,6 +22,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
+      # Step 2: Install jq (required for JSON parsing)
+      - name: Install jq
+        run: |
+          apt-get update && apt-get install -y jq
+        
       - name: Check for recent successful runs
         id: check-results
         run: |
