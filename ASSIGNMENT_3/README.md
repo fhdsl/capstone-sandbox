@@ -1,10 +1,16 @@
-# ASSIGNMENT 3 Instructions: Storing a secret
+# ASSIGNMENT 3 Instructions: Creating a GitHub Action
 
-Your goal for this assignment is to build a storing a GitHub secret.
+Your goal for this assignment is to build a working GitHub Action.
 
-1. Follow the steps it takes to create a personal access token and store it here. Store it as `ASSIGNMENT_SECRET`. It must be named exactly this or the eval will not find it to give you credit. 
-2. When you are ready to evaluate your work go to `Actions` and dispatch the `GitHub Secret Evaluation` action in this repo. 
-3. This GHA will comment on a GitHub issue (go to the `Issues` tab) on whether you successfully completed this assignment or not. . 
-6. Should your secret be successfully found you will be given a validation code on the issue.
-7. Copy this code and paste it in your Coursera Capstone Quiz as prompted.
-8. Submit your quiz! If you got a real code it should work and you will get credit for this work!
+1. You will use the `ASSIGNMENT_3.yml` for this assignment.
+2. Create a new branch to work from for this assignment.
+3. Move the `ASSIGNMENT_3.yml` file to its appropriate location.
+4. Add to the template `ASSIGNMENT_3.yml` so it performs something useful (this is up to you!). But you must keep the name of the file `ASSIGNMENT_3.yml`
+5. You can develop this from your own computer or from here.
+6. When you are ready to, open a pull request with the branch you created.
+7. You will see a test called `GHA Assignment Eval` begin running on this branch.
+8. This evaluation test, a GitHub Action (GHA), will comment on your open PR and will look for if your GitHub Action has ran successfully or not. It will also give tips for some common issues.
+9. Keep working on your GitHub Action using the troubleshooting strategies we discussed in the GitHub Automation for Scientists course.
+10. Should your action run successfully you will be given a validation code on your open PR.
+11. Copy this code and paste it in your Coursera Capstone Quiz as prompted.
+12. Submit your quiz! If you got a real code it should work and you will get credit for this work!
