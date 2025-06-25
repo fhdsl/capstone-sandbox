@@ -1,4 +1,4 @@
-# ASSIGNMENT 2 Instructions: Storing a secret
+# Storing a secret -- Assignment Instructions:
 
 Your goal for this assignment is to generate and store a GitHub secret.
 

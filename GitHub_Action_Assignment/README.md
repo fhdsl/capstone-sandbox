@@ -1,4 +1,4 @@
-# ASSIGNMENT 3 Instructions: Creating a GitHub Action
+# Creating a GitHub Action -- Assignment Instructions:
 
 Your goal for this assignment is to build a working GitHub Action.
 
