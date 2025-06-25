@@ -9,5 +9,5 @@ To get started:
 3. Now you are ready to start the assignments (there are three). Go to the associated folder and see the README in each for instructions. For more detail tips and help for these assignments, go to the [companion course](http://hutchdatascience.org/reproducibility_capstone/).
 
 - [Docker -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/Docker_Assignment/README.md)
-- [Store a secret -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Secret_Assignment/README.md)
+- [GitHub Secret -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Secret_Assignment/README.md)
 - [Build a GitHub action -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Action_Assignment/README.md)
