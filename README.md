@@ -10,4 +10,4 @@ To get started:
 
 - [Docker -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/Docker_Assignment/README.md)
 - [GitHub Secret -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Secret_Assignment/README.md)
-- [Build a GitHub action -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Action_Assignment/README.md)
+- [GitHub Action -- Assignment](https://github.com/fhdsl/capstone-sandbox/blob/main/GitHub_Action_Assignment/README.md)
