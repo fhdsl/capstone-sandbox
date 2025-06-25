@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
     paths:
-      - '.github/workflows/ASSIGNMENT_3.yml'
+      - '.github/workflows/GitHub_Action_Assignment.yml'
 
 jobs:
    gha-test:
@@ -34,7 +34,7 @@ jobs:
           RECENT_SUCCESS=false
 
           # Look for workflow files that might match
-          WORKFLOW_FILE=".github/workflows/ASSIGNMENT_3.yml"
+          WORKFLOW_FILE=".github/workflows/GitHub_Action_Assignment.yml"
 
           echo "Checking for workflow at: $WORKFLOW_FILE"
 
@@ -138,7 +138,7 @@ jobs:
           body: |
             ⚠️ **Invalid Workflow YAML** ⚠️
 
-            Your workflow file exists at `.github/workflows/ASSIGNMENT_3.yml`, but it contains invalid YAML syntax.
+            Your workflow file exists at `.github/workflows/GitHub_Action_Assignment.yml`, but it contains invalid YAML syntax.
 
             Please check your workflow file for:
             - Proper indentation (use spaces, not tabs)
@@ -161,7 +161,7 @@ jobs:
           body: |
             ⚠️ **No Recent Workflow Runs Found** ⚠️
 
-            Your workflow file exists at `.github/workflows/ASSIGNMENT_3.yml`, but I haven't found any successful runs in the last 7 days.
+            Your workflow file exists at `.github/workflows/GitHub_Action_Assignment.yml`, but I haven't found any successful runs in the last 7 days.
 
             **This could mean:**
             1. Your workflow hasn't been triggered yet
