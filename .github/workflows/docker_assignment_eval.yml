@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - 'main'
-    paths: [ 'ASSIGNMENT_1/docker/Dockerfile' ]
+    paths: [ 'Docker_Assignment/docker/Dockerfile' ]
 
 jobs:
   docker-test:
@@ -30,8 +30,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          context: ASSIGNMENT_1/docker
-          file: ASSIGNMENT_1/docker/Dockerfile
+          context: Docker_Assignment/docker
+          file: Docker_Assignment/docker/Dockerfile
         # We allow it to continue on error so we can capture the output and provide feedback
         continue-on-error: true
 
@@ -124,4 +124,3 @@ jobs:
             You've got this! Keep learning and trying!
           comment-id: docker-build-failure
           update-existing: true
-          
