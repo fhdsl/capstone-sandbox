@@ -3,13 +3,11 @@
 name: GitHub Action
 
 on:
-  pull_request:
+  # PUT A TRIGGER HERE
 
 jobs:
   job-name: # CALL THE JOB SOMETHING
     runs-on: ubuntu-latest  
     
     steps:
-
-      - uses: actions/checkout@v4
-        
+        # PUT A STEP HERE 'uses' or 'run'
