@@ -1,7 +1,6 @@
 name: GHA Assignment Evaluation
 
 on:
-  workflow_dispatch: 
   pull_request:
     branches:
       - 'main'
@@ -9,24 +8,24 @@ on:
       - '.github/workflows/GitHub_Action_Assignment.yml'
 
 jobs:
-   gha-test:
+  check-workflow:
     runs-on: ubuntu-latest
     container:
       image: maniator/gh
     permissions:
       actions: read
       contents: read
-      pull-requests: write
-
+    outputs:
+      workflow_status: ${{ steps.check-results.outputs.workflow_status }}
+      recent_success: ${{ steps.check-results.outputs.recent_success }}
+    
     steps:
-      # Step 1: Checkout the files here.
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Install jq (required for JSON parsing)
       - name: Install jq
         run: |
-          apk add jq
+          apk add --no-cache jq
 
       - name: Check for recent successful runs
         id: check-results
@@ -47,7 +46,7 @@ jobs:
 
             # Check for recent runs (last 7 days to be more forgiving)
             echo "Checking for recent workflow runs..."
-            RECENT_RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_INFO/runs?per_page=10" 2>/dev/null | jq -r '.workflow_runs[] | select(.created_at > "'$(date -d '7 days ago' -Iso8601)'") | {id: .id, status: .status, conclusion: .conclusion, created_at: .created_at, head_branch: .head_branch}')
+            RECENT_RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_INFO/runs?per_page=10" 2>/dev/null | jq -r '.workflow_runs[] | select(.created_at > "'$(date -d '7 days ago' -Iso8601 2>/dev/null || date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ)'") | {id: .id, status: .status, conclusion: .conclusion, created_at: .created_at, head_branch: .head_branch}')
 
             if [ ! -z "$RECENT_RUNS" ] && [ "$RECENT_RUNS" != "" ]; then
               echo "Found recent workflow runs:"
@@ -88,124 +87,106 @@ jobs:
           echo "recent_success=$RECENT_SUCCESS" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+        shell: sh
 
-      - name: Install Python and dependencies
-        if: steps.check-results.outputs.workflow_status == 'success'
+  generate-code-and-comment:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-slim
+    needs: check-workflow
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
         run: |
-          apk add --no-cache python3 py3-pip
-          pip3 install --break-system-packages requests uuid
+          apt-get update && apt-get install -y curl
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt-get update && apt-get install -y gh
+
+      - name: Install Python dependencies
+        if: needs.check-workflow.outputs.workflow_status == 'success'
+        run: |
+          pip install requests uuid
 
       - name: Generate secret code
         id: generate-code
-        if: steps.check-results.outputs.workflow_status == 'success'
+        if: needs.check-workflow.outputs.workflow_status == 'success'
         run: |
           SECRET_CODE=$(python .github/workflows/scripts/generate_secret_code.py)
           echo "Generated Secret Code: $SECRET_CODE"
           echo "secret_code=$SECRET_CODE" >> $GITHUB_OUTPUT
-        shell: bash
 
       # --- Comment on Pull Request (SUCCESS case) ---
       - name: Comment secret code on PR
-        if: steps.check-results.outputs.workflow_status == 'success'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            🎉 **GitHub Action Successful!** 🎉
+        if: needs.check-workflow.outputs.workflow_status == 'success'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "🎉 **GitHub Action Successful!** 🎉
 
-            Great job! Your GitHub Action ran successfully.
+          Great job! Your GitHub Action ran successfully.
 
-            Please copy the following secret code and provide it to your Coursera course to prove completion:
+          Please copy the following secret code and provide it to your Coursera course to prove completion:
 
-            ```
-            ${{ steps.generate-code.outputs.secret_code }}
-            ```
+          \`\`\`
+          ${{ steps.generate-code.outputs.secret_code }}
+          \`\`\`
 
-            Keep up the excellent work!
-          comment-id: docker-build-secret-code
-          update-existing: true
-
-      # --- Comment on Pull Request (INVALID WORKFLOW case) ---
-      - name: Comment on invalid workflow
-        if: steps.validate-workflow.outputs.workflow_exists == 'true' && steps.validate-workflow.outputs.workflow_valid == 'false'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ **Invalid Workflow YAML** ⚠️
-
-            Your workflow file exists at `.github/workflows/GitHub_Action_Assignment.yml`, but it contains invalid YAML syntax.
-
-            Please check your workflow file for:
-            - Proper indentation (use spaces, not tabs)
-            - Missing colons or quotes
-            - Incorrect YAML structure
-
-            You can validate your YAML online at https://yamlchecker.com/ or use a YAML validator in your IDE.
-
-            Once you fix the YAML syntax, push your changes and the evaluation will run automatically!
-            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch.
-          comment-id: invalid-workflow-yaml
-          update-existing: true
+          Keep up the excellent work!"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- Comment on Pull Request (NO RUNS case) ---
       - name: Comment on no workflow runs
-        if: steps.check-results.outputs.workflow_status == 'no_recent_runs' || steps.check-results.outputs.workflow_status == 'not_indexed'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ **No Recent Workflow Runs Found** ⚠️
+        if: needs.check-workflow.outputs.workflow_status == 'no_recent_runs' || needs.check-workflow.outputs.workflow_status == 'not_indexed'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ **No Recent Workflow Runs Found** ⚠️
 
-            Your workflow file exists at `.github/workflows/GitHub_Action_Assignment.yml`, but I haven't found any successful runs in the last 7 days.
+          Your workflow file exists at \`.github/workflows/GitHub_Action_Assignment.yml\`, but I haven't found any successful runs in the last 7 days.
 
-            **This could mean:**
-            1. Your workflow hasn't been triggered yet
-            2. Your workflow doesn't have the right triggers to run automatically
-            3. Your workflow has errors that prevent it from running
+          **This could mean:**
+          1. Your workflow hasn't been triggered yet
+          2. Your workflow doesn't have the right triggers to run automatically
+          3. Your workflow has errors that prevent it from running
 
-            **To get your workflow running:**
-            1. Make sure your workflow has triggers like:
-               ```yaml
-               on:
-                 push:
-                   branches: [ main ]
-                 pull_request:
-                   branches: [ main ]
-               ```
-            2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
-            3. Check the "Actions" tab in your repository to see if there are any workflow runs
+          **To get your workflow running:**
+          1. Make sure your workflow has triggers like:
+             \`\`\`yaml
+             on:
+               push:
+                 branches: [ main ]
+               pull_request:
+                 branches: [ main ]
+             \`\`\`
+          2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
+          3. Check the \"Actions\" tab in your repository to see if there are any workflow runs
 
-            If you push new commits, I'll automatically evaluate and detect your workflow run status. 
-            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch. 
-          comment-id: no-workflow-runs
-          update-existing: true
+          Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- Comment on Pull Request (FAILURE case) ---
       - name: Comment on PR (Failure)
-        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-results.outputs.workflow_status != 'no_recent_runs' && steps.check-results.outputs.workflow_status != 'not_indexed'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ **Workflow Run Failed** ⚠️
+        if: needs.check-workflow.outputs.workflow_status == 'failure'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ **Workflow Run Failed** ⚠️
 
-            Your workflow file exists and is valid, but the most recent run failed with status: `${{ steps.check-results.outputs.workflow_status }}`
+          Your workflow file exists and is valid, but the most recent run failed with status: \`${{ needs.check-workflow.outputs.workflow_status }}\`
 
-            **Next steps:**
-            1. Check the Actions tab in your repository to see the detailed logs
-            2. Look for error messages in the failed workflow run
-            3. Fix any issues in your workflow or the code it's trying to run
-            4. Push your changes to trigger another run
+          **Next steps:**
+          1. Check the Actions tab in your repository to see the detailed logs
+          2. Look for error messages in the failed workflow run
+          3. Fix any issues in your workflow or the code it's trying to run
+          4. Push your changes to trigger another run
 
-            After each new commit, the evaluation will automatically update! 
-            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch. 
+          Once your workflow runs successfully, the evaluation will automatically update!
 
-            Keep trying! You'll get it! 💪
-          comment-id: learner-action-secret-code-failure
-          update-existing: true
+          Keep trying! You'll get it! 💪"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
