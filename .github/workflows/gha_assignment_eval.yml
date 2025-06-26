@@ -93,7 +93,7 @@ jobs:
       - name: Install Python and dependencies
         if: steps.check-results.outputs.workflow_status == 'success'
         run: |
-          apt-get update && apt-get install -y python3 python3-pip
+          apk add --no-cache python3 py3-pip
           pip3 install requests uuid
 
       - name: Generate secret code
