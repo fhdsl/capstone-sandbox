@@ -150,6 +150,7 @@ jobs:
             You can validate your YAML online at https://yamlchecker.com/ or use a YAML validator in your IDE.
 
             Once you fix the YAML syntax, push your changes and the evaluation will run automatically!
+            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch.
           comment-id: invalid-workflow-yaml
           update-existing: true
 
@@ -182,7 +183,8 @@ jobs:
             2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
             3. Check the "Actions" tab in your repository to see if there are any workflow runs
 
-            Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀
+            If you push new commits, I'll automatically evaluate and detect your workflow run status. 
+            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch. 
           comment-id: no-workflow-runs
           update-existing: true
 
@@ -204,7 +206,8 @@ jobs:
             3. Fix any issues in your workflow or the code it's trying to run
             4. Push your changes to trigger another run
 
-            Once your workflow runs successfully, the evaluation will automatically update!
+            After each new commit, the evaluation will automatically update! 
+            If you want to retrigger a evaluation you can go to the Actions tab to do a manual dispatch. 
 
             Keep trying! You'll get it! 💪
           comment-id: learner-action-secret-code-failure
