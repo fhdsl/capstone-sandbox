@@ -90,14 +90,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Install uv
-        if: steps.check-results.outputs.workflow_status == 'success'
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
+      - name: Install Python and dependencies
         if: steps.check-results.outputs.workflow_status == 'success'
         run: |
-          uv pip install --system requests uuid
+          apt-get update && apt-get install -y python3 python3-pip
+          pip3 install requests uuid
 
       - name: Generate secret code
         id: generate-code
