@@ -102,13 +102,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install GitHub CLI
+      - name: Install git (required for actions)
         run: |
-          apt-get update && apt-get install -y curl
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          apt-get update && apt-get install -y gh
+          apt-get update && apt-get install -y git
 
       - name: Install Python dependencies
         if: needs.check-workflow.outputs.workflow_status == 'success'
@@ -126,67 +122,79 @@ jobs:
       # --- Comment on Pull Request (SUCCESS case) ---
       - name: Comment secret code on PR
         if: needs.check-workflow.outputs.workflow_status == 'success'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "🎉 **GitHub Action Successful!** 🎉
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🎉 **GitHub Action Successful!** 🎉
 
-          Great job! Your GitHub Action ran successfully.
+            Great job! Your GitHub Action ran successfully.
 
-          Please copy the following secret code and provide it to your Coursera course to prove completion:
+            Please copy the following secret code and provide it to your Coursera course to prove completion:
 
-          \`\`\`
-          ${{ steps.generate-code.outputs.secret_code }}
-          \`\`\`
+            ```
+            ${{ steps.generate-code.outputs.secret_code }}
+            ```
 
-          Keep up the excellent work!"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Keep up the excellent work!
+          comment-id: docker-build-secret-code
+          update-existing: true
 
       # --- Comment on Pull Request (NO RUNS case) ---
       - name: Comment on no workflow runs
         if: needs.check-workflow.outputs.workflow_status == 'no_recent_runs' || needs.check-workflow.outputs.workflow_status == 'not_indexed'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ **No Recent Workflow Runs Found** ⚠️
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **No Recent Workflow Runs Found** ⚠️
 
-          Your workflow file exists at \`.github/workflows/GitHub_Action_Assignment.yml\`, but I haven't found any successful runs in the last 7 days.
+            Your workflow file exists at `.github/workflows/GitHub_Action_Assignment.yml`, but I haven't found any successful runs in the last 7 days.
 
-          **This could mean:**
-          1. Your workflow hasn't been triggered yet
-          2. Your workflow doesn't have the right triggers to run automatically
-          3. Your workflow has errors that prevent it from running
+            **This could mean:**
+            1. Your workflow hasn't been triggered yet
+            2. Your workflow doesn't have the right triggers to run automatically
+            3. Your workflow has errors that prevent it from running
 
-          **To get your workflow running:**
-          1. Make sure your workflow has triggers like:
-             \`\`\`yaml
-             on:
-               push:
-                 branches: [ main ]
-               pull_request:
-                 branches: [ main ]
-             \`\`\`
-          2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
-          3. Check the \"Actions\" tab in your repository to see if there are any workflow runs
+            **To get your workflow running:**
+            1. Make sure your workflow has triggers like:
+               ```yaml
+               on:
+                 push:
+                   branches: [ main ]
+                 pull_request:
+                   branches: [ main ]
+               ```
+            2. Try making a small change to your repository (like editing this comment or adding a space to a file) to trigger the workflow
+            3. Check the "Actions" tab in your repository to see if there are any workflow runs
 
-          Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Once your workflow runs successfully, I'll automatically detect it and give you the completion code! 🚀
+          comment-id: no-workflow-runs
+          update-existing: true
 
       # --- Comment on Pull Request (FAILURE case) ---
       - name: Comment on PR (Failure)
         if: needs.check-workflow.outputs.workflow_status == 'failure'
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ **Workflow Run Failed** ⚠️
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Workflow Run Failed** ⚠️
 
-          Your workflow file exists and is valid, but the most recent run failed with status: \`${{ needs.check-workflow.outputs.workflow_status }}\`
+            Your workflow file exists and is valid, but the most recent run failed with status: `${{ needs.check-workflow.outputs.workflow_status }}`
 
-          **Next steps:**
-          1. Check the Actions tab in your repository to see the detailed logs
-          2. Look for error messages in the failed workflow run
-          3. Fix any issues in your workflow or the code it's trying to run
-          4. Push your changes to trigger another run
+            **Next steps:**
+            1. Check the Actions tab in your repository to see the detailed logs
+            2. Look for error messages in the failed workflow run
+            3. Fix any issues in your workflow or the code it's trying to run
+            4. Push your changes to trigger another run
 
-          Once your workflow runs successfully, the evaluation will automatically update!
+            Once your workflow runs successfully, the evaluation will automatically update!
 
-          Keep trying! You'll get it! 💪"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Keep trying! You'll get it! 💪
+          comment-id: learner-action-secret-code-failure
+          update-existing: true
   
