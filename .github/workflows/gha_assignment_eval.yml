@@ -1,6 +1,7 @@
 name: GHA Assignment Evaluation
 
 on:
+  workflow_dispatch: 
   pull_request:
     branches:
       - 'main'
