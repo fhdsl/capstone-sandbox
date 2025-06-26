@@ -187,7 +187,7 @@ jobs:
 
       # --- Comment on Pull Request (FAILURE case) ---
       - name: Comment on PR (Failure)
-        if: steps.check-results.outputs.workflow_status != 'failure'
+        if: steps.check-results.outputs.workflow_status != 'success' && steps.check-results.outputs.workflow_status != 'no_recent_runs' && steps.check-results.outputs.workflow_status != 'not_indexed'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
