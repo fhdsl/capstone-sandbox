@@ -87,6 +87,7 @@ jobs:
           echo "recent_success=$RECENT_SUCCESS" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Install uv
         if: steps.check-results.outputs.workflow_status == 'success'
