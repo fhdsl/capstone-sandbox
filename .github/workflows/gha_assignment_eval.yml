@@ -94,7 +94,7 @@ jobs:
         if: steps.check-results.outputs.workflow_status == 'success'
         run: |
           apk add --no-cache python3 py3-pip
-          pip3 install requests uuid
+          pip3 install --break-system-packages requests uuid
 
       - name: Generate secret code
         id: generate-code
